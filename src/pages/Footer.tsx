@@ -6,8 +6,10 @@ import { CmsPageShell, getAxiosErrorMessage } from '@/components/cms/CmsPageShel
 import { ImageUploadField } from '@/components/cms/ImageUploadField'
 import { ReorderableListActions } from '@/components/cms/ReorderableListActions'
 import { StringList } from '@/components/cms/StringList'
+import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
 import { footerService } from '@/services/footer'
 import { uploadService } from '@/services/upload'
+import type { CmsFetchOptions } from '@/types/cms'
 import type {
   FooterCertificationBadgeForm,
   FooterData,
@@ -16,6 +18,7 @@ import type {
   FooterSocialLinkForm,
 } from '@/types/footer'
 import { isAcceptedImageFile, moveItem } from '@/utils/cms'
+import { isAbortError } from '@/utils/abort'
 import {
   createEmptyCertificationBadge,
   createEmptyFooterLink,
@@ -260,23 +263,22 @@ export function Footer() {
   const logoPreviewUrlRef = useRef<string | null>(null)
   const badgePreviewUrlRefs = useRef<Record<number, string>>({})
 
-  const fetchData = useCallback(async (options?: { silent?: boolean }) => {
+  const fetchData = useCallback(async (options?: CmsFetchOptions) => {
     if (!options?.silent) setIsLoading(true)
     setError('')
     try {
-      const data = await footerService.get()
+      const data = await footerService.get({ signal: options?.signal })
       setOriginal(data)
       setForm(mapFooterToFormState(data))
     } catch (err) {
+      if (isAbortError(err)) return
       setError(getAxiosErrorMessage(err, 'Failed to load footer data.'))
     } finally {
-      if (!options?.silent) setIsLoading(false)
+      if (!options?.silent && !options?.signal?.aborted) setIsLoading(false)
     }
   }, [])
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  useCmsInitialLoad(fetchData)
 
   useEffect(() => {
     return () => {

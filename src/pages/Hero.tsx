@@ -3,9 +3,12 @@ import { isAxiosError } from 'axios'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
 import { heroService } from '@/services/hero'
 import { uploadService } from '@/services/upload'
+import type { CmsFetchOptions } from '@/types/cms'
 import type { HeroData, HeroFormState, HeroStatItem, HeroTrustIndicatorItem } from '@/types/hero'
+import { isAbortError } from '@/utils/abort'
 import {
   createEmptyHighlight,
   createEmptyStat,
@@ -251,17 +254,18 @@ export function Hero() {
     window.setTimeout(() => setSaveNotice(''), 4000)
   }
 
-  const fetchHero = useCallback(async (options?: { silent?: boolean }) => {
+  const fetchHero = useCallback(async (options?: CmsFetchOptions) => {
     if (!options?.silent) {
       setIsLoading(true)
     }
     setError('')
 
     try {
-      const hero = await heroService.getHero()
+      const hero = await heroService.getHero({ signal: options?.signal })
       setOriginalHero(hero)
       setForm(mapHeroToFormState(hero))
     } catch (err) {
+      if (isAbortError(err)) return
       if (isAxiosError(err)) {
         const message =
           err.response?.data?.error?.message ??
@@ -272,15 +276,13 @@ export function Hero() {
         setError('An unexpected error occurred while loading hero data.')
       }
     } finally {
-      if (!options?.silent) {
+      if (!options?.silent && !options?.signal?.aborted) {
         setIsLoading(false)
       }
     }
   }, [])
 
-  useEffect(() => {
-    fetchHero()
-  }, [fetchHero])
+  useCmsInitialLoad(fetchHero)
 
   useEffect(() => {
     return () => {

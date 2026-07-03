@@ -3,9 +3,12 @@ import { isAxiosError } from 'axios'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
 import { headerService } from '@/services/header'
 import { uploadService } from '@/services/upload'
+import type { CmsFetchOptions } from '@/types/cms'
 import type { HeaderData, HeaderFormState, HeaderLinkItem } from '@/types/header'
+import { isAbortError } from '@/utils/abort'
 import {
   createEmptyLinkItem,
   mapFormStateToHeader,
@@ -127,17 +130,18 @@ export function Header() {
     window.setTimeout(() => setSaveNotice(''), 4000)
   }
 
-  const fetchHeader = useCallback(async (options?: { silent?: boolean }) => {
+  const fetchHeader = useCallback(async (options?: CmsFetchOptions) => {
     if (!options?.silent) {
       setIsLoading(true)
     }
     setError('')
 
     try {
-      const header = await headerService.getHeader()
+      const header = await headerService.getHeader({ signal: options?.signal })
       setOriginalHeader(header)
       setForm(mapHeaderToFormState(header))
     } catch (err) {
+      if (isAbortError(err)) return
       if (isAxiosError(err)) {
         const message =
           err.response?.data?.error?.message ??
@@ -148,15 +152,13 @@ export function Header() {
         setError('An unexpected error occurred while loading header data.')
       }
     } finally {
-      if (!options?.silent) {
+      if (!options?.silent && !options?.signal?.aborted) {
         setIsLoading(false)
       }
     }
   }, [])
 
-  useEffect(() => {
-    fetchHeader()
-  }, [fetchHeader])
+  useCmsInitialLoad(fetchHeader)
 
   useEffect(() => {
     return () => {

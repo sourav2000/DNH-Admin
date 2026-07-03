@@ -1,16 +1,19 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { CmsPageShell, getAxiosErrorMessage } from '@/components/cms/CmsPageShell'
 import { ReorderableListActions } from '@/components/cms/ReorderableListActions'
+import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
 import { servicesAreaPagesService } from '@/services/servicesAreaPages'
+import type { CmsFetchOptions } from '@/types/cms'
 import type {
   ServiceAreaPageDetailForm,
   ServicesAreaPagesData,
   ServicesAreaPagesFormState,
 } from '@/types/servicesAreaPages'
 import { moveItem } from '@/utils/cms'
+import { isAbortError } from '@/utils/abort'
 import {
   createEmptyServiceDetail,
   mapFormStateToServicesAreaPages,
@@ -99,23 +102,22 @@ export function ServiceAreaPage() {
   const [saveNotice, setSaveNotice] = useState('')
   const [saveNoticeType, setSaveNoticeType] = useState<'success' | 'error'>('success')
 
-  const fetchData = useCallback(async (options?: { silent?: boolean }) => {
+  const fetchData = useCallback(async (options?: CmsFetchOptions) => {
     if (!options?.silent) setIsLoading(true)
     setError('')
     try {
-      const data = await servicesAreaPagesService.get()
+      const data = await servicesAreaPagesService.get({ signal: options?.signal })
       setOriginal(data)
       setForm(mapServicesAreaPagesToFormState(data))
     } catch (err) {
+      if (isAbortError(err)) return
       setError(getAxiosErrorMessage(err, 'Failed to load service area page data.'))
     } finally {
-      if (!options?.silent) setIsLoading(false)
+      if (!options?.silent && !options?.signal?.aborted) setIsLoading(false)
     }
   }, [])
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  useCmsInitialLoad(fetchData)
 
   const updateField = <K extends keyof ServicesAreaPagesFormState>(
     field: K,

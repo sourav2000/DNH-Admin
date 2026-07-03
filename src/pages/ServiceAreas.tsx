@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { CmsPageShell, getAxiosErrorMessage } from '@/components/cms/CmsPageShell'
 import { StringList } from '@/components/cms/StringList'
+import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
 import { servicesAreaService } from '@/services/servicesArea'
+import type { CmsFetchOptions } from '@/types/cms'
 import type { ServiceAreaRegionForm, ServicesAreaData, ServicesAreaFormState } from '@/types/servicesArea'
+import { isAbortError } from '@/utils/abort'
 import { mapFormStateToServicesArea, mapServicesAreaToFormState } from '@/utils/servicesArea'
 
 function RegionCard({
@@ -54,23 +57,22 @@ export function ServiceAreas() {
   const [saveNotice, setSaveNotice] = useState('')
   const [saveNoticeType, setSaveNoticeType] = useState<'success' | 'error'>('success')
 
-  const fetchData = useCallback(async (options?: { silent?: boolean }) => {
+  const fetchData = useCallback(async (options?: CmsFetchOptions) => {
     if (!options?.silent) setIsLoading(true)
     setError('')
     try {
-      const data = await servicesAreaService.get()
+      const data = await servicesAreaService.get({ signal: options?.signal })
       setOriginal(data)
       setForm(mapServicesAreaToFormState(data))
     } catch (err) {
+      if (isAbortError(err)) return
       setError(getAxiosErrorMessage(err, 'Failed to load service areas data.'))
     } finally {
-      if (!options?.silent) setIsLoading(false)
+      if (!options?.silent && !options?.signal?.aborted) setIsLoading(false)
     }
   }, [])
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  useCmsInitialLoad(fetchData)
 
   const updateRegion = (index: number, region: ServiceAreaRegionForm) => {
     setForm((prev) => {

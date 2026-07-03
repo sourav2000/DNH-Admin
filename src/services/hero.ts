@@ -3,9 +3,10 @@ import type { HeroData } from '@/types/hero'
 import { extractHeroFromResponse } from '@/utils/hero'
 
 export const heroService = {
-  async getHero(): Promise<HeroData | null> {
+  async getHero(options?: { signal?: AbortSignal }): Promise<HeroData | null> {
     const { data } = await api.get('/api/dnh-property', {
       params: { fields: 'hero' },
+      signal: options?.signal,
     })
     return extractHeroFromResponse(data)
   },

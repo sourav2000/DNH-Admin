@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { CmsPageShell, getAxiosErrorMessage } from '@/components/cms/CmsPageShell'
 import { ReorderableListActions } from '@/components/cms/ReorderableListActions'
+import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
 import { serviceOverviewService } from '@/services/serviceOverview'
+import type { CmsFetchOptions } from '@/types/cms'
 import type { ServiceOverviewData, ServiceOverviewFormState, ServiceOverviewItemForm } from '@/types/serviceOverview'
+import { isAbortError } from '@/utils/abort'
 import { moveItem } from '@/utils/cms'
 import {
   createEmptyServiceOverviewItem,
@@ -109,23 +112,22 @@ export function ServicesOverview() {
   const [saveNotice, setSaveNotice] = useState('')
   const [saveNoticeType, setSaveNoticeType] = useState<'success' | 'error'>('success')
 
-  const fetchData = useCallback(async (options?: { silent?: boolean }) => {
+  const fetchData = useCallback(async (options?: CmsFetchOptions) => {
     if (!options?.silent) setIsLoading(true)
     setError('')
     try {
-      const data = await serviceOverviewService.get()
+      const data = await serviceOverviewService.get({ signal: options?.signal })
       setOriginal(data)
       setForm(mapServiceOverviewToFormState(data))
     } catch (err) {
+      if (isAbortError(err)) return
       setError(getAxiosErrorMessage(err, 'Failed to load services overview data.'))
     } finally {
-      if (!options?.silent) setIsLoading(false)
+      if (!options?.silent && !options?.signal?.aborted) setIsLoading(false)
     }
   }, [])
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  useCmsInitialLoad(fetchData)
 
   const updateField = <K extends keyof ServiceOverviewFormState>(
     field: K,

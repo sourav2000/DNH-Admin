@@ -3,9 +3,12 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { CmsPageShell, getAxiosErrorMessage } from '@/components/cms/CmsPageShell'
 import { ImageUploadField } from '@/components/cms/ImageUploadField'
+import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
 import { coverageAreaService } from '@/services/coverageArea'
 import { uploadService } from '@/services/upload'
+import type { CmsFetchOptions } from '@/types/cms'
 import type { CoverageAreaData, CoverageAreaFormState } from '@/types/coverageArea'
+import { isAbortError } from '@/utils/abort'
 import { isAcceptedImageFile } from '@/utils/cms'
 import { mapCoverageAreaToFormState, mapFormStateToCoverageArea } from '@/utils/coverageArea'
 
@@ -20,23 +23,22 @@ export function CoverageArea() {
   const [mapFile, setMapFile] = useState<File | null>(null)
   const mapPreviewUrlRef = useRef<string | null>(null)
 
-  const fetchData = useCallback(async (options?: { silent?: boolean }) => {
+  const fetchData = useCallback(async (options?: CmsFetchOptions) => {
     if (!options?.silent) setIsLoading(true)
     setError('')
     try {
-      const data = await coverageAreaService.get()
+      const data = await coverageAreaService.get({ signal: options?.signal })
       setOriginal(data)
       setForm(mapCoverageAreaToFormState(data))
     } catch (err) {
+      if (isAbortError(err)) return
       setError(getAxiosErrorMessage(err, 'Failed to load coverage area data.'))
     } finally {
-      if (!options?.silent) setIsLoading(false)
+      if (!options?.silent && !options?.signal?.aborted) setIsLoading(false)
     }
   }, [])
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  useCmsInitialLoad(fetchData)
 
   useEffect(() => {
     return () => {
