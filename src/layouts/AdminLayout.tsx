@@ -12,6 +12,7 @@ const pageTitles: Record<string, string> = {
   '/testimonials': 'Testimonials',
   '/coverage-area': 'Coverage Area',
   '/service-areas': 'Service Areas',
+  '/service-area-page': 'Service Area Page',
   '/footer': 'Footer',
   '/media-library': 'Media Library',
   '/settings': 'Settings',

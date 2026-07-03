@@ -10,6 +10,7 @@ const navItems: NavItem[] = [
   { label: 'Testimonials', path: '/testimonials', icon: '◉' },
   { label: 'Coverage Area', path: '/coverage-area', icon: '◎' },
   { label: 'Service Areas', path: '/service-areas', icon: '◍' },
+  { label: 'Service Area Page', path: '/service-area-page', icon: '◔' },
   { label: 'Footer', path: '/footer', icon: '▥' },
   { label: 'Media Library', path: '/media-library', icon: '◫' },
   { label: 'Settings', path: '/settings', icon: '⚙' },
