@@ -3,12 +3,12 @@ import { AdminLayout } from '@/layouts/AdminLayout'
 import { Dashboard } from '@/pages/Dashboard'
 import { Login } from '@/pages/Login'
 import { Header } from '@/pages/Header'
+import { Hero } from '@/pages/Hero'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { ProtectedRoute } from '@/routes/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
 
 const placeholderRoutes = [
-  { path: 'hero', title: 'Hero' },
   { path: 'services-overview', title: 'Services Overview' },
   { path: 'trust-badges', title: 'Trust Badges' },
   { path: 'testimonials', title: 'Testimonials' },
@@ -54,6 +54,7 @@ export function AppRoutes() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/header" element={<Header />} />
+          <Route path="/hero" element={<Hero />} />
           {placeholderRoutes.map(({ path, title }) => (
             <Route
               key={path}
