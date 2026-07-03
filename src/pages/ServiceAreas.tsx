@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/Input'
 import { CmsPageShell, getAxiosErrorMessage } from '@/components/cms/CmsPageShell'
 import { StringList } from '@/components/cms/StringList'
 import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
+import { useToast } from '@/context/ToastContext'
 import { servicesAreaService } from '@/services/servicesArea'
 import type { CmsFetchOptions } from '@/types/cms'
 import type { ServiceAreaRegionForm, ServicesAreaData, ServicesAreaFormState } from '@/types/servicesArea'
@@ -49,13 +50,12 @@ function RegionCard({
 }
 
 export function ServiceAreas() {
+  const toast = useToast()
   const [form, setForm] = useState<ServicesAreaFormState | null>(null)
   const [original, setOriginal] = useState<ServicesAreaData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
-  const [saveNotice, setSaveNotice] = useState('')
-  const [saveNoticeType, setSaveNoticeType] = useState<'success' | 'error'>('success')
 
   const fetchData = useCallback(async (options?: CmsFetchOptions) => {
     if (!options?.silent) setIsLoading(true)
@@ -86,17 +86,12 @@ export function ServiceAreas() {
   const handleSave = async () => {
     if (!form || isSaving) return
     setIsSaving(true)
-    setSaveNotice('')
     try {
       await servicesAreaService.update(mapFormStateToServicesArea(form, original))
-      setSaveNotice('Service areas saved successfully.')
-      setSaveNoticeType('success')
-      window.setTimeout(() => setSaveNotice(''), 4000)
+      toast.success('Service areas saved successfully.')
       await fetchData({ silent: true })
     } catch (err) {
-      setSaveNotice(getAxiosErrorMessage(err, 'Failed to save changes.'))
-      setSaveNoticeType('error')
-      window.setTimeout(() => setSaveNotice(''), 4000)
+      toast.error(getAxiosErrorMessage(err, 'Failed to save changes.'))
     } finally {
       setIsSaving(false)
     }
@@ -109,8 +104,6 @@ export function ServiceAreas() {
       description="Manage service areas content loaded from Strapi."
       isLoading={isLoading}
       error={error}
-      saveNotice={saveNotice}
-      saveNoticeType={saveNoticeType}
       isSaving={isSaving}
       onRetry={fetchData}
       onSave={handleSave}

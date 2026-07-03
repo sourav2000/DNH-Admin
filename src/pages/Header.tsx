@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
+import { useToast } from '@/context/ToastContext'
 import { headerService } from '@/services/header'
 import { uploadService } from '@/services/upload'
 import type { CmsFetchOptions } from '@/types/cms'
@@ -113,22 +114,15 @@ function LinkItemList({
 }
 
 export function Header() {
+  const toast = useToast()
   const [form, setForm] = useState<HeaderFormState | null>(null)
   const [originalHeader, setOriginalHeader] = useState<HeaderData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
-  const [saveNotice, setSaveNotice] = useState('')
-  const [saveNoticeType, setSaveNoticeType] = useState<'success' | 'error'>('success')
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const logoPreviewUrlRef = useRef<string | null>(null)
-
-  const showSaveNotice = (message: string, type: 'success' | 'error') => {
-    setSaveNotice(message)
-    setSaveNoticeType(type)
-    window.setTimeout(() => setSaveNotice(''), 4000)
-  }
 
   const fetchHeader = useCallback(async (options?: CmsFetchOptions) => {
     if (!options?.silent) {
@@ -177,10 +171,7 @@ export function Header() {
 
   const handleLogoSelect = (file: File) => {
     if (!isAcceptedLogoFile(file)) {
-      showSaveNotice(
-        'Please select a valid image file (.jpg, .jpeg, .png, .webp, .svg).',
-        'error',
-      )
+      toast.error('Please select a valid image file (.jpg, .jpeg, .png, .webp, .svg).')
       return
     }
 
@@ -198,7 +189,6 @@ export function Header() {
     if (!form || isSaving) return
 
     setIsSaving(true)
-    setSaveNotice('')
 
     try {
       let uploadedImageUrl: string | undefined
@@ -218,7 +208,7 @@ export function Header() {
         URL.revokeObjectURL(logoPreviewUrlRef.current)
         logoPreviewUrlRef.current = null
       }
-      showSaveNotice('Header saved successfully.', 'success')
+      toast.success('Header saved successfully.')
       await fetchHeader({ silent: true })
     } catch (err) {
       if (isAxiosError(err)) {
@@ -226,9 +216,9 @@ export function Header() {
           err.response?.data?.error?.message ??
           err.response?.data?.message ??
           'Failed to save header changes. Please try again.'
-        showSaveNotice(message, 'error')
+        toast.error(message)
       } else {
-        showSaveNotice('An unexpected error occurred while saving.', 'error')
+        toast.error('An unexpected error occurred while saving.')
       }
     } finally {
       setIsSaving(false)
@@ -276,13 +266,6 @@ export function Header() {
           </p>
         </div>
         <div className="flex flex-col items-stretch gap-2 sm:items-end">
-          {saveNotice && (
-            <p
-              className={`text-sm ${saveNoticeType === 'success' ? 'text-green-700' : 'text-red-700'}`}
-            >
-              {saveNotice}
-            </p>
-          )}
           <Button type="button" onClick={handleSave} isLoading={isSaving}>
             Save Changes
           </Button>

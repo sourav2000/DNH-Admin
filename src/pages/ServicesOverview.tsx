@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input'
 import { CmsPageShell, getAxiosErrorMessage } from '@/components/cms/CmsPageShell'
 import { ReorderableListActions } from '@/components/cms/ReorderableListActions'
 import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
+import { useToast } from '@/context/ToastContext'
 import { serviceOverviewService } from '@/services/serviceOverview'
 import type { CmsFetchOptions } from '@/types/cms'
 import type { ServiceOverviewData, ServiceOverviewFormState, ServiceOverviewItemForm } from '@/types/serviceOverview'
@@ -104,13 +105,12 @@ function ServicesList({
 }
 
 export function ServicesOverview() {
+  const toast = useToast()
   const [form, setForm] = useState<ServiceOverviewFormState | null>(null)
   const [original, setOriginal] = useState<ServiceOverviewData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
-  const [saveNotice, setSaveNotice] = useState('')
-  const [saveNoticeType, setSaveNoticeType] = useState<'success' | 'error'>('success')
 
   const fetchData = useCallback(async (options?: CmsFetchOptions) => {
     if (!options?.silent) setIsLoading(true)
@@ -139,17 +139,12 @@ export function ServicesOverview() {
   const handleSave = async () => {
     if (!form || isSaving) return
     setIsSaving(true)
-    setSaveNotice('')
     try {
       await serviceOverviewService.update(mapFormStateToServiceOverview(form, original))
-      setSaveNotice('Services overview saved successfully.')
-      setSaveNoticeType('success')
-      window.setTimeout(() => setSaveNotice(''), 4000)
+      toast.success('Services overview saved successfully.')
       await fetchData({ silent: true })
     } catch (err) {
-      setSaveNotice(getAxiosErrorMessage(err, 'Failed to save changes.'))
-      setSaveNoticeType('error')
-      window.setTimeout(() => setSaveNotice(''), 4000)
+      toast.error(getAxiosErrorMessage(err, 'Failed to save changes.'))
     } finally {
       setIsSaving(false)
     }
@@ -162,8 +157,6 @@ export function ServicesOverview() {
       description="Manage the services overview section content loaded from Strapi."
       isLoading={isLoading}
       error={error}
-      saveNotice={saveNotice}
-      saveNoticeType={saveNoticeType}
       isSaving={isSaving}
       onRetry={fetchData}
       onSave={handleSave}

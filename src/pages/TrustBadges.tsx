@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input'
 import { CmsPageShell, getAxiosErrorMessage } from '@/components/cms/CmsPageShell'
 import { ReorderableListActions } from '@/components/cms/ReorderableListActions'
 import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
+import { useToast } from '@/context/ToastContext'
 import { trustBadgesService } from '@/services/trustBadges'
 import type { CmsFetchOptions } from '@/types/cms'
 import type { TrustBadgeItemForm, TrustBadgesFormState } from '@/types/trustBadges'
@@ -86,12 +87,11 @@ function BadgesList({
 }
 
 export function TrustBadges() {
+  const toast = useToast()
   const [form, setForm] = useState<TrustBadgesFormState | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
-  const [saveNotice, setSaveNotice] = useState('')
-  const [saveNoticeType, setSaveNoticeType] = useState<'success' | 'error'>('success')
 
   const fetchData = useCallback(async (options?: CmsFetchOptions) => {
     if (!options?.silent) setIsLoading(true)
@@ -119,17 +119,12 @@ export function TrustBadges() {
   const handleSave = async () => {
     if (!form || isSaving) return
     setIsSaving(true)
-    setSaveNotice('')
     try {
       await trustBadgesService.update(mapFormStateToTrustBadges(form))
-      setSaveNotice('Trust badges saved successfully.')
-      setSaveNoticeType('success')
-      window.setTimeout(() => setSaveNotice(''), 4000)
+      toast.success('Trust badges saved successfully.')
       await fetchData({ silent: true })
     } catch (err) {
-      setSaveNotice(getAxiosErrorMessage(err, 'Failed to save changes.'))
-      setSaveNoticeType('error')
-      window.setTimeout(() => setSaveNotice(''), 4000)
+      toast.error(getAxiosErrorMessage(err, 'Failed to save changes.'))
     } finally {
       setIsSaving(false)
     }
@@ -142,8 +137,6 @@ export function TrustBadges() {
       description="Manage trust badges content loaded from Strapi."
       isLoading={isLoading}
       error={error}
-      saveNotice={saveNotice}
-      saveNoticeType={saveNoticeType}
       isSaving={isSaving}
       onRetry={fetchData}
       onSave={handleSave}

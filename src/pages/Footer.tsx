@@ -7,6 +7,7 @@ import { ImageUploadField } from '@/components/cms/ImageUploadField'
 import { ReorderableListActions } from '@/components/cms/ReorderableListActions'
 import { StringList } from '@/components/cms/StringList'
 import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
+import { useToast } from '@/context/ToastContext'
 import { footerService } from '@/services/footer'
 import { uploadService } from '@/services/upload'
 import type { CmsFetchOptions } from '@/types/cms'
@@ -251,13 +252,12 @@ function CertificationBadgesList({
 }
 
 export function Footer() {
+  const toast = useToast()
   const [form, setForm] = useState<FooterFormState | null>(null)
   const [original, setOriginal] = useState<FooterData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
-  const [saveNotice, setSaveNotice] = useState('')
-  const [saveNoticeType, setSaveNoticeType] = useState<'success' | 'error'>('success')
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [badgeFiles, setBadgeFiles] = useState<Record<number, File>>({})
   const logoPreviewUrlRef = useRef<string | null>(null)
@@ -295,9 +295,7 @@ export function Footer() {
   }
 
   const showError = (message: string) => {
-    setSaveNotice(message)
-    setSaveNoticeType('error')
-    window.setTimeout(() => setSaveNotice(''), 4000)
+    toast.error(message)
   }
 
   const handleLogoSelect = (file: File) => {
@@ -333,7 +331,6 @@ export function Footer() {
   const handleSave = async () => {
     if (!form || isSaving) return
     setIsSaving(true)
-    setSaveNotice('')
     try {
       let uploadedLogoUrl: string | undefined
       if (logoFile) uploadedLogoUrl = await uploadService.uploadImage(logoFile)
@@ -357,14 +354,10 @@ export function Footer() {
       Object.values(badgePreviewUrlRefs.current).forEach((url) => URL.revokeObjectURL(url))
       badgePreviewUrlRefs.current = {}
 
-      setSaveNotice('Footer saved successfully.')
-      setSaveNoticeType('success')
-      window.setTimeout(() => setSaveNotice(''), 4000)
+      toast.success('Footer saved successfully.')
       await fetchData({ silent: true })
     } catch (err) {
-      setSaveNotice(getAxiosErrorMessage(err, 'Failed to save changes.'))
-      setSaveNoticeType('error')
-      window.setTimeout(() => setSaveNotice(''), 4000)
+      toast.error(getAxiosErrorMessage(err, 'Failed to save changes.'))
     } finally {
       setIsSaving(false)
     }
@@ -377,8 +370,6 @@ export function Footer() {
       description="Manage footer content loaded from Strapi."
       isLoading={isLoading}
       error={error}
-      saveNotice={saveNotice}
-      saveNoticeType={saveNoticeType}
       isSaving={isSaving}
       onRetry={fetchData}
       onSave={handleSave}

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
+import { useToast } from '@/context/ToastContext'
 import { heroService } from '@/services/hero'
 import { uploadService } from '@/services/upload'
 import type { CmsFetchOptions } from '@/types/cms'
@@ -237,22 +238,15 @@ function StatsList({
 }
 
 export function Hero() {
+  const toast = useToast()
   const [form, setForm] = useState<HeroFormState | null>(null)
   const [originalHero, setOriginalHero] = useState<HeroData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
-  const [saveNotice, setSaveNotice] = useState('')
-  const [saveNoticeType, setSaveNoticeType] = useState<'success' | 'error'>('success')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const imagePreviewUrlRef = useRef<string | null>(null)
-
-  const showSaveNotice = (message: string, type: 'success' | 'error') => {
-    setSaveNotice(message)
-    setSaveNoticeType(type)
-    window.setTimeout(() => setSaveNotice(''), 4000)
-  }
 
   const fetchHero = useCallback(async (options?: CmsFetchOptions) => {
     if (!options?.silent) {
@@ -301,10 +295,7 @@ export function Hero() {
 
   const handleImageSelect = (file: File) => {
     if (!isAcceptedImageFile(file)) {
-      showSaveNotice(
-        'Please select a valid image file (.jpg, .jpeg, .png, .webp, .svg).',
-        'error',
-      )
+      toast.error('Please select a valid image file (.jpg, .jpeg, .png, .webp, .svg).')
       return
     }
 
@@ -322,7 +313,6 @@ export function Hero() {
     if (!form || isSaving) return
 
     setIsSaving(true)
-    setSaveNotice('')
 
     try {
       let uploadedImageSrc: string | undefined
@@ -338,7 +328,7 @@ export function Hero() {
         URL.revokeObjectURL(imagePreviewUrlRef.current)
         imagePreviewUrlRef.current = null
       }
-      showSaveNotice('Hero saved successfully.', 'success')
+      toast.success('Hero saved successfully.')
       await fetchHero({ silent: true })
     } catch (err) {
       if (isAxiosError(err)) {
@@ -346,9 +336,9 @@ export function Hero() {
           err.response?.data?.error?.message ??
           err.response?.data?.message ??
           'Failed to save hero changes. Please try again.'
-        showSaveNotice(message, 'error')
+        toast.error(message)
       } else {
-        showSaveNotice('An unexpected error occurred while saving.', 'error')
+        toast.error('An unexpected error occurred while saving.')
       }
     } finally {
       setIsSaving(false)
@@ -394,13 +384,6 @@ export function Hero() {
           </p>
         </div>
         <div className="flex flex-col items-stretch gap-2 sm:items-end">
-          {saveNotice && (
-            <p
-              className={`text-sm ${saveNoticeType === 'success' ? 'text-green-700' : 'text-red-700'}`}
-            >
-              {saveNotice}
-            </p>
-          )}
           <Button type="button" onClick={handleSave} isLoading={isSaving}>
             Save Changes
           </Button>

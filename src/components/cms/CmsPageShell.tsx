@@ -6,8 +6,6 @@ interface CmsPageShellProps {
   description: string
   isLoading: boolean
   error: string
-  saveNotice: string
-  saveNoticeType: 'success' | 'error'
   isSaving: boolean
   onRetry: () => void
   onSave: () => void
@@ -18,8 +16,6 @@ export function CmsPageShell({
   description,
   isLoading,
   error,
-  saveNotice,
-  saveNoticeType,
   isSaving,
   onRetry,
   onSave,
@@ -60,13 +56,6 @@ export function CmsPageShell({
           <p className="text-sm text-slate-500">{description}</p>
         </div>
         <div className="flex flex-col items-stretch gap-2 sm:items-end">
-          {saveNotice && (
-            <p
-              className={`text-sm ${saveNoticeType === 'success' ? 'text-green-700' : 'text-red-700'}`}
-            >
-              {saveNotice}
-            </p>
-          )}
           <Button type="button" onClick={onSave} isLoading={isSaving}>
             Save Changes
           </Button>

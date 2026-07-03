@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/Input'
 import { CmsPageShell, getAxiosErrorMessage } from '@/components/cms/CmsPageShell'
 import { ImageUploadField } from '@/components/cms/ImageUploadField'
 import { useCmsInitialLoad } from '@/hooks/useCmsInitialLoad'
+import { useToast } from '@/context/ToastContext'
 import { coverageAreaService } from '@/services/coverageArea'
 import { uploadService } from '@/services/upload'
 import type { CmsFetchOptions } from '@/types/cms'
@@ -13,13 +14,12 @@ import { isAcceptedImageFile } from '@/utils/cms'
 import { mapCoverageAreaToFormState, mapFormStateToCoverageArea } from '@/utils/coverageArea'
 
 export function CoverageArea() {
+  const toast = useToast()
   const [form, setForm] = useState<CoverageAreaFormState | null>(null)
   const [original, setOriginal] = useState<CoverageAreaData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
-  const [saveNotice, setSaveNotice] = useState('')
-  const [saveNoticeType, setSaveNoticeType] = useState<'success' | 'error'>('success')
   const [mapFile, setMapFile] = useState<File | null>(null)
   const mapPreviewUrlRef = useRef<string | null>(null)
 
@@ -55,9 +55,7 @@ export function CoverageArea() {
 
   const handleMapSelect = (file: File) => {
     if (!isAcceptedImageFile(file)) {
-      setSaveNotice('Please select a valid image file (.jpg, .jpeg, .png, .webp, .svg).')
-      setSaveNoticeType('error')
-      window.setTimeout(() => setSaveNotice(''), 4000)
+      toast.error('Please select a valid image file (.jpg, .jpeg, .png, .webp, .svg).')
       return
     }
     if (mapPreviewUrlRef.current) URL.revokeObjectURL(mapPreviewUrlRef.current)
@@ -70,7 +68,6 @@ export function CoverageArea() {
   const handleSave = async () => {
     if (!form || isSaving) return
     setIsSaving(true)
-    setSaveNotice('')
     try {
       let uploadedMapImage: string | undefined
       if (mapFile) uploadedMapImage = await uploadService.uploadImage(mapFile)
@@ -83,14 +80,10 @@ export function CoverageArea() {
         URL.revokeObjectURL(mapPreviewUrlRef.current)
         mapPreviewUrlRef.current = null
       }
-      setSaveNotice('Coverage area saved successfully.')
-      setSaveNoticeType('success')
-      window.setTimeout(() => setSaveNotice(''), 4000)
+      toast.success('Coverage area saved successfully.')
       await fetchData({ silent: true })
     } catch (err) {
-      setSaveNotice(getAxiosErrorMessage(err, 'Failed to save changes.'))
-      setSaveNoticeType('error')
-      window.setTimeout(() => setSaveNotice(''), 4000)
+      toast.error(getAxiosErrorMessage(err, 'Failed to save changes.'))
     } finally {
       setIsSaving(false)
     }
@@ -103,8 +96,6 @@ export function CoverageArea() {
       description="Manage coverage area section content loaded from Strapi."
       isLoading={isLoading}
       error={error}
-      saveNotice={saveNotice}
-      saveNoticeType={saveNoticeType}
       isSaving={isSaving}
       onRetry={fetchData}
       onSave={handleSave}
