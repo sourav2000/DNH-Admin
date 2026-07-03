@@ -2,12 +2,12 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { Dashboard } from '@/pages/Dashboard'
 import { Login } from '@/pages/Login'
+import { Header } from '@/pages/Header'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { ProtectedRoute } from '@/routes/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
 
 const placeholderRoutes = [
-  { path: 'header', title: 'Header' },
   { path: 'hero', title: 'Hero' },
   { path: 'services-overview', title: 'Services Overview' },
   { path: 'trust-badges', title: 'Trust Badges' },
@@ -53,6 +53,7 @@ export function AppRoutes() {
         <Route element={<AdminLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/header" element={<Header />} />
           {placeholderRoutes.map(({ path, title }) => (
             <Route
               key={path}
